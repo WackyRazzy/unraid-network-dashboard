@@ -33,8 +33,7 @@ echo "network-dashboard: directories created"
 <!-- Step 2: Download server.py from GitHub -->
 <FILE Run="/bin/bash">
 <INLINE>
-curl -fsSL "https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/source/server.py" \
-  -o /boot/custom/network-dashboard/server.py
+curl -fsSL "https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/source/server.py" -o /boot/custom/network-dashboard/server.py
 echo "network-dashboard: server.py downloaded"
 </INLINE>
 </FILE>
@@ -42,8 +41,7 @@ echo "network-dashboard: server.py downloaded"
 <!-- Step 3: Download index.html from GitHub -->
 <FILE Run="/bin/bash">
 <INLINE>
-curl -fsSL "https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/source/index.html" \
-  -o /boot/custom/network-dashboard/index.html
+curl -fsSL "https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/source/index.html" -o /boot/custom/network-dashboard/index.html
 echo "network-dashboard: index.html downloaded"
 </INLINE>
 </FILE>
@@ -51,8 +49,7 @@ echo "network-dashboard: index.html downloaded"
 <!-- Step 4: Download the Unraid dashboard widget page from GitHub -->
 <FILE Run="/bin/bash">
 <INLINE>
-curl -fsSL "https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/source/network-dashboard.page" \
-  -o /boot/custom/network-dashboard/plugin/network-dashboard.page
+curl -fsSL "https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/source/network-dashboard.page" -o /boot/custom/network-dashboard/plugin/network-dashboard.page
 echo "network-dashboard: widget page downloaded"
 </INLINE>
 </FILE>
@@ -66,13 +63,16 @@ LOGFILE="/var/log/network-dashboard.log"
 PIDFILE="/var/run/network-dashboard.pid"
 
 start() {
-  if [ -f "$PIDFILE" ] && kill -0 "$(cat $PIDFILE)" 2>/dev/null; then
-    echo "[network-dashboard] Already running (PID: $(cat $PIDFILE))"
-    return 0
+  if [ -f "$PIDFILE" ]; then
+    PID=$(cat "$PIDFILE")
+    if kill -0 "$PID" 2>/dev/null; then
+      echo "[network-dashboard] Already running (PID: $PID)"
+      return 0
+    fi
   fi
   fuser -k 8888/tcp 2>/dev/null
   sleep 1
-  nohup python3 "$DASHBOARD_DIR/server.py" > "$LOGFILE" 2>&1 &
+  nohup python3 "$DASHBOARD_DIR/server.py" > "$LOGFILE" 2>&amp;1 &amp;
   echo $! > "$PIDFILE"
   echo "[network-dashboard] Started (PID: $(cat $PIDFILE))"
 }
@@ -91,8 +91,13 @@ case "$1" in
   stop)    stop ;;
   restart) stop; sleep 1; start ;;
   status)
-    if [ -f "$PIDFILE" ] && kill -0 "$(cat $PIDFILE)" 2>/dev/null; then
-      echo "[network-dashboard] Running (PID: $(cat $PIDFILE))"
+    if [ -f "$PIDFILE" ]; then
+      PID=$(cat "$PIDFILE")
+      if kill -0 "$PID" 2>/dev/null; then
+        echo "[network-dashboard] Running (PID: $PID)"
+      else
+        echo "[network-dashboard] Not running"
+      fi
     else
       echo "[network-dashboard] Not running"
     fi
@@ -106,8 +111,119 @@ esac
 <FILE Run="/bin/bash">
 <INLINE>
 mkdir -p /usr/local/emhttp/plugins/network-dashboard
-ln -sf /boot/custom/network-dashboard/plugin/network-dashboard.page \
-  /usr/local/emhttp/plugins/network-dashboard/network-dashboard.page
+<!DOCTYPE PLUGIN [
+  <!ENTITY name      "network-dashboard">
+  <!ENTITY author    "WackyRazzy">
+  <!ENTITY version   "2025.03.08">
+  <!ENTITY gitURL    "https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main">
+  <!ENTITY pluginURL "&gitURL;/plugin/network-dashboard.plg">
+]>
+<PLUGIN name="&name;"
+        author="&author;"
+        version="&version;"
+        pluginURL="&pluginURL;"
+        min="6.11.9"
+        support="https://github.com/WackyRazzy/unraid-network-dashboard">
+
+<CHANGES>
+###2025.03.08###
+- Initial release
+- Real-time network monitoring dashboard widget for Unraid
+- Full-page diagnostic panel at port 8888
+- Python3 API server, no extra packages needed
+- Auto-starts on boot
+</CHANGES>
+
+<!-- Step 1: Create required directories -->
+<FILE Run="/bin/bash">
+<INLINE>
+mkdir -p /boot/custom/network-dashboard/plugin
+echo "network-dashboard: directories created"
+</INLINE>
+</FILE>
+
+<!-- Step 2: Download server.py from GitHub -->
+<FILE Run="/bin/bash">
+<INLINE>
+curl -fsSL "https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/source/server.py" -o /boot/custom/network-dashboard/server.py
+echo "network-dashboard: server.py downloaded"
+</INLINE>
+</FILE>
+
+<!-- Step 3: Download index.html from GitHub -->
+<FILE Run="/bin/bash">
+<INLINE>
+curl -fsSL "https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/source/index.html" -o /boot/custom/network-dashboard/index.html
+echo "network-dashboard: index.html downloaded"
+</INLINE>
+</FILE>
+
+<!-- Step 4: Download the Unraid dashboard widget page from GitHub -->
+<FILE Run="/bin/bash">
+<INLINE>
+curl -fsSL "https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/source/network-dashboard.page" -o /boot/custom/network-dashboard/plugin/network-dashboard.page
+echo "network-dashboard: widget page downloaded"
+</INLINE>
+</FILE>
+
+<!-- Step 5: Install start/stop service manager script -->
+<FILE Name="/boot/custom/network-dashboard/start.sh" Mode="0755">
+<INLINE>
+#!/bin/bash
+DASHBOARD_DIR="/boot/custom/network-dashboard"
+LOGFILE="/var/log/network-dashboard.log"
+PIDFILE="/var/run/network-dashboard.pid"
+
+start() {
+  if [ -f "$PIDFILE" ]; then
+    PID=$(cat "$PIDFILE")
+    if kill -0 "$PID" 2>/dev/null; then
+      echo "[network-dashboard] Already running (PID: $PID)"
+      return 0
+    fi
+  fi
+  fuser -k 8888/tcp 2>/dev/null
+  sleep 1
+  nohup python3 "$DASHBOARD_DIR/server.py" > "$LOGFILE" 2>&amp;1 &amp;
+  echo $! > "$PIDFILE"
+  echo "[network-dashboard] Started (PID: $(cat $PIDFILE))"
+}
+
+stop() {
+  if [ -f "$PIDFILE" ]; then
+    kill "$(cat $PIDFILE)" 2>/dev/null
+    rm -f "$PIDFILE"
+  fi
+  fuser -k 8888/tcp 2>/dev/null
+  echo "[network-dashboard] Stopped"
+}
+
+case "$1" in
+  start)   start ;;
+  stop)    stop ;;
+  restart) stop; sleep 1; start ;;
+  status)
+    if [ -f "$PIDFILE" ]; then
+      PID=$(cat "$PIDFILE")
+      if kill -0 "$PID" 2>/dev/null; then
+        echo "[network-dashboard] Running (PID: $PID)"
+      else
+        echo "[network-dashboard] Not running"
+      fi
+    else
+      echo "[network-dashboard] Not running"
+    fi
+    ;;
+  *) start ;;
+esac
+</INLINE>
+</FILE>
+
+<!-- Step 6: Register plugin page with Unraid UI -->
+<FILE Run="/bin/bash">
+<INLINE>
+mkdir -p /usr/local/emhttp/plugins/network-dashboard
+ln -sf /boot/custom/network-dashboard/plugin/network-dashboard.page /usr/local/emhttp/plugins/network-dashboard/network-dashboard.page
 echo "network-dashboard: UI page registered"
 </INLINE>
 </FILE>
@@ -126,7 +242,7 @@ fi
 <FILE Run="/bin/bash">
 <INLINE>
 bash /boot/custom/network-dashboard/start.sh start
-LOCAL_IP=$(ip -4 addr show br0 2>/dev/null | grep -oP '(?<=inet )[d.]+' | head -1)
+LOCAL_IP=$(ip -4 addr show br0 2>/dev/null | grep -oP '(?&lt;=inet )[0-9.]+' | head -1)
 if [ -z "$LOCAL_IP" ]; then LOCAL_IP=$(hostname -I | awk '{print $1}'); fi
 echo "network-dashboard: install complete! Open http://${LOCAL_IP}:8888"
 </INLINE>
