@@ -19,14 +19,13 @@
 <CHANGES>
 ###2025.03.08###
 - Initial release
-- Real-time network monitoring dashboard
-- Unraid dashboard widget showing public IP, ISP, latency
-- Full-page dashboard with port checks, interface info, Docker stats
-- Python API server on port 8888
-- Auto-starts on boot via go script
+- Real-time network monitoring dashboard widget
+- Full-page diagnostic panel at port 8888
+- Python3 API server, no extra packages needed
+- Auto-starts on boot
 </CHANGES>
 
-<!-- Create plugin directories -->
+<!-- Step 1: Create directories -->
 <FILE Run="/bin/bash">
 <INLINE>
 mkdir -p /boot/custom/network-dashboard/plugin
@@ -34,100 +33,92 @@ echo "network-dashboard: directories created"
 </INLINE>
 </FILE>
 
-<!-- Install start/stop script -->
+<!-- Step 2: Install start/stop service manager -->
 <FILE Name="/boot/custom/network-dashboard/start.sh" Mode="0755">
 <INLINE>
 #!/bin/bash
-# WackyNAS Network Dashboard - Service Manager
 DASHBOARD_DIR="/boot/custom/network-dashboard"
 LOGFILE="/var/log/network-dashboard.log"
 PIDFILE="/var/run/network-dashboard.pid"
-
 start() {
-    if [ -f "$PIDFILE" ] && kill -0 "$(cat $PIDFILE)" 2>/dev/null; then
-        echo "[network-dashboard] Already running (PID: $(cat $PIDFILE))"
-        return 0
-    fi
-    fuser -k 8888/tcp 2>/dev/null
-    sleep 1
-    nohup python3 "$DASHBOARD_DIR/server.py" > "$LOGFILE" 2>&1 &
-    echo $! > "$PIDFILE"
-    echo "[network-dashboard] Started on port 8888 (PID: $(cat $PIDFILE))"
+  if [ -f "$PIDFILE" ] &amp;&amp; kill -0 "$(cat $PIDFILE)" 2&gt;/dev/null; then
+    echo "[network-dashboard] Already running (PID: $(cat $PIDFILE))"; return 0
+  fi
+  fuser -k 8888/tcp 2&gt;/dev/null; sleep 1
+  nohup python3 "$DASHBOARD_DIR/server.py" &gt; "$LOGFILE" 2&gt;&amp;1 &amp;
+  echo $! &gt; "$PIDFILE"
+  echo "[network-dashboard] Started (PID: $(cat $PIDFILE))"
 }
-
 stop() {
-    if [ -f "$PIDFILE" ]; then
-        kill "$(cat $PIDFILE)" 2>/dev/null
-        rm -f "$PIDFILE"
-        echo "[network-dashboard] Stopped"
-    fi
-    fuser -k 8888/tcp 2>/dev/null
+  if [ -f "$PIDFILE" ]; then
+    kill "$(cat $PIDFILE)" 2&gt;/dev/null
+    rm -f "$PIDFILE"
+  fi
+  fuser -k 8888/tcp 2&gt;/dev/null
+  echo "[network-dashboard] Stopped"
 }
-
 case "$1" in
-    start)   start  ;;
-    stop)    stop   ;;
-    restart) stop; sleep 1; start ;;
-    status)
-        if [ -f "$PIDFILE" ] && kill -0 "$(cat $PIDFILE)" 2>/dev/null; then
-            echo "[network-dashboard] Running (PID: $(cat $PIDFILE))"
-        else
-            echo "[network-dashboard] Not running"
-        fi ;;
-    *)       start  ;;
+  start) start ;;
+  stop) stop ;;
+  restart) stop; sleep 1; start ;;
+  status)
+    if [ -f "$PIDFILE" ] &amp;&amp; kill -0 "$(cat $PIDFILE)" 2&gt;/dev/null; then
+      echo "[network-dashboard] Running (PID: $(cat $PIDFILE))"
+    else
+      echo "[network-dashboard] Not running"
+    fi ;;
+  *) start ;;
 esac
 </INLINE>
 </FILE>
 
-<!-- Register symlink with Unraid UI -->
+<!-- Step 3: Download server.py and index.html from GitHub -->
+<FILE Run="/bin/bash">
+<INLINE>
+GIT="https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/source"
+curl -fsSL "$GIT/server.py" -o /boot/custom/network-dashboard/server.py
+curl -fsSL "$GIT/index.html" -o /boot/custom/network-dashboard/index.html
+curl -fsSL "$GIT/network-dashboard.page" -o /boot/custom/network-dashboard/plugin/network-dashboard.page
+echo "network-dashboard: source files downloaded"
+</INLINE>
+</FILE>
+
+<!-- Step 4: Register plugin page with Unraid UI -->
 <FILE Run="/bin/bash">
 <INLINE>
 mkdir -p /usr/local/emhttp/plugins/network-dashboard
 ln -sf /boot/custom/network-dashboard/plugin/network-dashboard.page \
        /usr/local/emhttp/plugins/network-dashboard/network-dashboard.page
-echo "network-dashboard: page registered"
+echo "network-dashboard: UI page registered"
 </INLINE>
 </FILE>
 
-<!-- Add auto-start to go script -->
+<!-- Step 5: Add to Unraid boot script -->
 <FILE Run="/bin/bash">
 <INLINE>
 if ! grep -qF "network-dashboard" /boot/config/go; then
-    echo "" >> /boot/config/go
-    echo "# WackyNAS Network Dashboard" >> /boot/config/go
-    echo "bash /boot/custom/network-dashboard/start.sh start" >> /boot/config/go
-    echo "network-dashboard: added to go script"
+  printf "\n# WackyNAS Network Dashboard\nbash /boot/custom/network-dashboard/start.sh start\n" >> /boot/config/go
+  echo "network-dashboard: added to boot script"
 fi
 </INLINE>
 </FILE>
 
-<!-- Download server.py and index.html from GitHub -->
-<FILE Run="/bin/bash">
-<INLINE>
-GIT="https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/source"
-curl -sL "$GIT/server.py"    -o /boot/custom/network-dashboard/server.py
-curl -sL "$GIT/index.html"   -o /boot/custom/network-dashboard/index.html
-curl -sL "$GIT/network-dashboard.page" -o /boot/custom/network-dashboard/plugin/network-dashboard.page
-echo "network-dashboard: files downloaded"
-</INLINE>
-</FILE>
-
-<!-- Start the server immediately -->
+<!-- Step 6: Start the server now -->
 <FILE Run="/bin/bash">
 <INLINE>
 bash /boot/custom/network-dashboard/start.sh start
-echo "network-dashboard: installation complete!"
-echo "Dashboard: http://$(hostname -I | awk '{print $1}'):8888"
+LOCAL_IP=$(ip -4 addr show br0 2>/dev/null | grep -oP '(?&lt;=inet )[\d.]+' | head -1)
+echo "network-dashboard: install complete! Open http://${LOCAL_IP:-YOUR-IP}:8888"
 </INLINE>
 </FILE>
 
-<!-- Remove on uninstall -->
+<!-- Uninstall handler -->
 <FILE Run="/bin/bash" Method="remove">
 <INLINE>
 bash /boot/custom/network-dashboard/start.sh stop 2>/dev/null
 sed -i '/network-dashboard/d' /boot/config/go
 rm -rf /usr/local/emhttp/plugins/network-dashboard
-echo "network-dashboard: uninstalled (files in /boot/custom/network-dashboard/ kept)"
+echo "network-dashboard: removed (files kept at /boot/custom/network-dashboard/)"
 </INLINE>
 </FILE>
 
