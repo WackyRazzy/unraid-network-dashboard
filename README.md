@@ -1,4 +1,4 @@
-# WackyNAS — Unraid Network Dashboard
+# RazzyNet — Unraid Network Dashboard
 
 > **Real-time network monitoring for your Unraid server.** A lightweight plugin that adds a live dashboard widget and a full cyberpunk-style diagnostic panel showing everything happening on your network — right from your Unraid UI.
 
@@ -11,7 +11,7 @@
 
 ## What Is This?
 
-**WackyNAS Network Dashboard** is an Unraid plugin that gives you instant visibility into your server's network status — without needing to SSH in or run commands manually.
+**RazzyNet Network Dashboard** is an Unraid plugin that gives you instant visibility into your server's network status — without needing to SSH in or run commands manually.
 
 It installs two things:
 
@@ -19,14 +19,6 @@ It installs two things:
 2. **A full-page diagnostic panel** at `http://YOUR-IP:8888` — a sleek dark cyberpunk-style interface with detailed real-time network diagnostics
 
 Everything runs automatically. No Docker containers, no npm, no extra packages. It uses Python 3 which is already included with Unraid, and auto-starts every time your server boots.
-
----
-
-## Screenshots
-
-| Unraid Dashboard Widget | Full Diagnostic Panel |
-|---|---|
-| Shows on your Unraid main page | Opens at http://YOUR-IP:8888 |
 
 ---
 
@@ -53,7 +45,7 @@ Everything runs automatically. No Docker containers, no npm, no extra packages. 
 ### Option 1: Community Apps Store (Recommended)
 
 1. In your Unraid web UI, click the **Apps** tab
-2. Search for **WackyNAS Network Dashboard**
+2. Search for **RazzyNet Network Dashboard**
 3. Click **Install**
 4. Done — the widget appears on your Dashboard and the full panel is at `http://YOUR-IP:8888`
 
@@ -70,7 +62,7 @@ Everything runs automatically. No Docker containers, no npm, no extra packages. 
 
 ## Accessing the Dashboard
 
-After installation open your browser and go to:
+After installation, open your browser and go to:
 
 - **Full dashboard panel:** `http://YOUR-UNRAID-IP:8888`
 - **Raw JSON API:** `http://YOUR-UNRAID-IP:8888/api/network`
@@ -137,7 +129,9 @@ unraid-network-dashboard/
 ├── template/
 │   └── network-dashboard.xml       ← Community Apps store listing
 ├── source/
-│   └── README.md                   ← Source file notes
+│   ├── server.py                   ← Python3 API server
+│   ├── index.html                  ← Full-page dashboard UI
+│   └── network-dashboard.page      ← Unraid dashboard widget
 ├── .github/
 │   └── workflows/
 │       └── release.yml             ← Auto-creates GitHub releases on new tags
@@ -166,26 +160,12 @@ bash /boot/custom/network-dashboard/start.sh start
 
 ---
 
-## Submitting to Community Apps
-
-To get this plugin listed in the Unraid Community Apps store:
-1. Fork this repo or use your own copy
-2. Open an issue at: https://github.com/Squidly271/AppFeed/issues
-3. Title: `Plugin Submission: WackyNAS Network Dashboard`
-4. Include your GitHub URL and the contents of `template/network-dashboard.xml`
-
----
-
 ## License
 
-MIT License — free to use, modify and share. See [LICENSE](LICENSE) for details.
+MIT License — free to use, modify and share.
 
 ---
 
-## Credits
+Built for Unraid by **WackyRazzy** — drop a ⭐ if it's useful!
 
-Built for the Unraid community by **WackyRazzy**.
-
-If this saves you time or you just think it looks cool, drop a ⭐ on GitHub!
-
-**Issues and pull requests are welcome:** https://github.com/WackyRazzy/unraid-network-dashboard/issues
+**Issues and pull requests welcome:** https://github.com/WackyRazzy/unraid-network-dashboard/issues
