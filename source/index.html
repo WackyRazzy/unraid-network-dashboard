@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Status</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07090d; --panel: #0c1118; --panel2: #0f1520;
+    --border: #182840; --border2: #1e3558;
+    --glow: #00c8ff; --glow2: #00ff9d; --glow3: #ff7b2e;
+    --text: #b8ddf5; --dim: #3d6080; --dim2: #2a4a68;
+    --good: #00ff9d; --warn: #ffc400; --bad: #ff4040;
+    --mono: 'Share Tech Mono', monospace; --title: 'Orbitron', monospace;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--mono); min-height:100vh; padding:18px; }
+  .hdr { text-align:center; margin-bottom:22px; }
+  .hdr h1 { font-family:var(--title); font-size:clamp(1.3rem,3.5vw,2rem); font-weight:900; letter-spacing:5px; color:var(--glow); text-shadow:0 0 12px var(--glow),0 0 40px rgba(0,200,255,.35); animation:glow-pulse 3.5s ease-in-out infinite; }
+  @keyframes glow-pulse { 0%,100%{ text-shadow:0 0 12px var(--glow),0 0 40px rgba(0,200,255,.3); } 50%{ text-shadow:0 0 20px var(--glow),0 0 60px rgba(0,200,255,.55); } }
+  .hdr-sub { color:var(--dim); font-size:.68rem; letter-spacing:3px; margin-top:5px; }
+  .hdr-ver { color:var(--dim2); font-size:.63rem; letter-spacing:2px; margin-top:3px; }
+  .hdr-line { height:1px; margin-top:14px; background:linear-gradient(90deg, transparent 0%, var(--glow) 30%, var(--glow2) 70%, transparent 100%); }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .span2 { grid-column:span 2; }
+  @media(max-width:640px){ .grid{grid-template-columns:1fr} .span2{grid-column:span 1} }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:4px; overflow:hidden; position:relative; animation:fadeup .5s ease both; }
+  .panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, transparent, var(--glow), transparent); opacity:.4; }
+  @keyframes fadeup { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  .ph { display:flex; align-items:center; gap:9px; padding:9px 14px; border-bottom:1px solid var(--border); background:rgba(0,200,255,.03); }
+  .ph-icon { font-size:1rem; }
+  .ph-title { font-family:var(--title); font-size:.6rem; font-weight:700; letter-spacing:2.5px; color:var(--glow); }
+  .pb { padding:12px 14px; }
+  .row { display:flex; justify-content:space-between; align-items:baseline; padding:5px 0; border-bottom:1px solid rgba(24,40,64,.6); gap:10px; }
+  .row:last-child{ border-bottom:none; }
+  .rl { color:var(--dim); font-size:.68rem; letter-spacing:1px; white-space:nowrap; flex-shrink:0; }
+  .rv { font-size:.78rem; text-align:right; word-break:break-all; color:var(--text); }
+  .rv.ac { color:var(--glow); } .rv.g { color:var(--good); } .rv.w { color:var(--warn); } .rv.b { color:var(--bad); } .rv.d { color:var(--dim); }
+  .badge { display:inline-block; font-size:.6rem; padding:1px 7px; border-radius:2px; font-family:var(--title); letter-spacing:1px; }
+  .badge.up { color:var(--good); background:rgba(0,255,157,.1); border:1px solid rgba(0,255,157,.3); }
+  .badge.down { color:var(--bad); background:rgba(255,64,64,.1); border:1px solid rgba(255,64,64,.3); }
+  .badge.idle { color:var(--dim); background:rgba(61,96,128,.1); border:1px solid rgba(61,96,128,.3); }
+  .lat-row { padding:5px 0; border-bottom:1px solid rgba(24,40,64,.6); }
+  .lat-row:last-child{ border-bottom:none; }
+  .lat-top { display:flex; justify-content:space-between; margin-bottom:4px; }
+  .lat-label { color:var(--dim); font-size:.68rem; } .lat-ms { font-size:.75rem; }
+  .bar-track { height:3px; background:rgba(255,255,255,.05); border-radius:2px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--glow2),var(--glow)); transition:width 1.2s ease; }
+  .ports-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
+  .port-card { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 4px; border:1px solid var(--border); border-radius:3px; background:rgba(0,0,0,.25); }
+  .port-num { font-family:var(--title); font-size:.7rem; color:var(--dim); letter-spacing:1px; }
+  .port-svc { font-size:.58rem; color:var(--dim2); }
+  .port-state { font-size:.65rem; font-weight:bold; padding:2px 8px; border-radius:2px; }
+  .port-state.open { color:var(--good); background:rgba(0,255,157,.09); border:1px solid rgba(0,255,157,.28); }
+  .port-state.closed { color:var(--bad); background:rgba(255,64,64,.09); border:1px solid rgba(255,64,64,.28); }
+  .iface-table { width:100%; border-collapse:collapse; font-size:.7rem; }
+  .iface-table th { color:var(--dim); text-align:left; padding:4px 8px; border-bottom:1px solid var(--border2); font-weight:normal; letter-spacing:1px; font-size:.63rem; }
+  .iface-table td { padding:5px 8px; border-bottom:1px solid rgba(24,40,64,.4); }
+  .iface-table tr:last-child td { border-bottom:none; }
+  .map-btn { display:inline-flex; align-items:center; gap:6px; color:var(--glow); font-size:.68rem; text-decoration:none; padding:4px 10px; border:1px solid rgba(0,200,255,.28); border-radius:3px; margin-top:8px; transition:all .2s; background:rgba(0,200,255,.04); font-family:var(--mono); }
+  .docker-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .d-stat { display:flex; flex-direction:column; align-items:center; padding:8px 16px; border:1px solid var(--border); border-radius:3px; background:rgba(0,0,0,.2); }
+  .d-num { font-family:var(--title); font-size:1.4rem; color:var(--glow); }
+  .d-lbl { font-size:.6rem; color:var(--dim); letter-spacing:1px; margin-top:2px; }
+  .sbar { display:flex; justify-content:space-between; align-items:center; padding:9px 14px; border:1px solid var(--border); border-radius:4px; margin-top:14px; background:var(--panel); font-size:.65rem; color:var(--dim); flex-wrap:wrap; gap:8px; }
+  .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--good); margin-right:7px; animation:blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .rbtn { background:none; border:1px solid var(--border); color:var(--glow); font-family:var(--mono); font-size:.65rem; padding:4px 12px; border-radius:3px; cursor:pointer; letter-spacing:1px; transition:all .2s; }
+  .sk { display:inline-block; height:.8em; min-width:70px; border-radius:2px; background:linear-gradient(90deg, rgba(24,40,64,.5) 25%, rgba(0,200,255,.08) 50%, rgba(24,40,64,.5) 75%); background-size:200% 100%; animation:shimmer 1.6s infinite; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .spin { display:inline-block; animation:spin 1s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+<div style="max-width:960px;margin:0 auto;">
+  <div class="hdr">
+    <h1>&#x2B21; <span id="hdr-hostname">NETWORK</span> &middot; NETWORK STATUS</h1>
+    <div class="hdr-sub">REAL-TIME DIAGNOSTIC PANEL</div>
+    <div class="hdr-ver" id="ver-line">Loading...</div>
+    <div class="hdr-line"></div>
+  </div>
+  <div class="grid">
+    <div class="panel">
+      <div class="ph"><span class="ph-icon">&#127757;</span><span class="ph-title">PUBLIC INTERNET</span></div>
+      <div class="pb">
+        <div class="row"><span class="rl">PUBLIC IP</span><span class="rv ac" id="pub-ip"><span class="sk"></span></span></div>
+        <div class="row"><span class="rl">ISP</span><span class="rv" id="pub-isp"><span class="sk"></span></span></div>
+        <div class="row"><span class="rl">ASN</span><span class="rv" id="pub-asn"><span class="sk"></span></span></div>
+        <div class="row"><span class="rl">LOCATION</span><span class="rv" id="pub-loc"><span class="sk"></span></span></div>
+        <div class="row"><span class="rl">PROXY/VPN</span><span class="rv" id="pub-proxy"><span class="sk"></span></span></div>
+        <a class="map-btn" id="map-btn" href="#" target="_blank">&#x1F5FA; OPEN IN MAPS &rarr;</a>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span class="ph-icon">&#127968;</span><span class="ph-title">LOCAL SERVER</span></div>
+      <div class="pb">
+        <div class="row"><span class="rl">HOSTNAME</span><span class="rv ac" id="l-host"><span class="sk"></span></span></div>
+        <div class="row"><span class="rl">LOCAL IP</span><span class="rv" id="l-ip"><span class="sk"></span></span></div>
+        <div class="row"><span class="rl">IPv6</span><span class="rv d" id="l-ip6"><span class="sk"></span></span></div>
+        <div class="row"><span class="rl">GATEWAY</span><span class="rv" id="l-gw"><span class="sk"></span></span></div>
+        <div class="row"><span class="rl">DNS</span><span class="rv" id="l-dns"><span class="sk"></span></span></div>
+        <div class="row"><span class="rl">MAC</span><span class="rv d" id="l-mac"><span class="sk"></span></span></div>
+        <div class="row"><span class="rl">TAILSCALE</span><span class="rv" id="l-ts"><span class="sk"></span></span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span class="ph-icon">&#9889;</span><span class="ph-title">INTERNET LATENCY</span></div>
+      <div class="pb" id="lat-body"><div class="sk" style="width:100%;height:60px;border-radius:3px;"></div></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span class="ph-icon">&#x1F433;</span><span class="ph-title">DOCKER</span></div>
+      <div class="pb">
+        <div class="docker-row">
+          <div class="d-stat"><span class="d-num" id="d-run">-</span><span class="d-lbl">RUNNING</span></div>
+          <div class="d-stat"><span class="d-num" id="d-total">-</span><span class="d-lbl">TOTAL</span></div>
+          <div class="d-stat"><span class="d-num" id="d-stopped" style="color:var(--dim)">-</span><span class="d-lbl">STOPPED</span></div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="row"><span class="rl">eth0 RX</span><span class="rv g" id="s-rx">-</span></div>
+          <div class="row"><span class="rl">eth0 TX</span><span class="rv ac" id="s-tx">-</span></div>
+          <div class="row"><span class="rl">eth0 STATE</span><span class="rv" id="s-eth0">-</span></div>
+          <div class="row"><span class="rl">eth1 STATE</span><span class="rv" id="s-eth1">-</span></div>
+          <div class="row"><span class="rl">BOND MODE</span><span class="rv d" id="s-bond">-</span></div>
+          <div class="row"><span class="rl">MTU</span><span class="rv d" id="s-mtu">-</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel span2">
+      <div class="ph"><span class="ph-icon">&#x1F50C;</span><span class="ph-title">LOCAL PORT STATUS</span></div>
+      <div class="pb">
+        <div class="ports-grid" id="ports-grid"><div class="sk" style="width:100%;height:55px;border-radius:3px;grid-column:span 6;"></div></div>
+      </div>
+    </div>
+    <div class="panel span2">
+      <div class="ph"><span class="ph-icon">&#x1F4E1;</span><span class="ph-title">PHYSICAL INTERFACES</span></div>
+      <div class="pb" id="iface-body"><div class="sk" style="width:100%;height:60px;border-radius:3px;"></div></div>
+    </div>
+  </div>
+  <div class="sbar">
+    <div><span class="dot"></span><span id="ts">Loading...</span></div>
+    <button class="rbtn" onclick="loadAll()">&#x21BB; REFRESH</button>
+  </div>
+</div>
+<script>
+const API='/api/network';
+function s(id,html){const e=document.getElementById(id);if(e)e.innerHTML=html;}
+function colorMs(ms){if(ms===null||ms===undefined)return '<span class="rv b">TIMEOUT</span>';const c=ms<30?'g':ms<80?'w':'b';return '<span class="rv '+c+'">'+ms+' ms</span>';}
+function barW(ms,max=200){return ms==null?0:Math.min(100,Math.round(ms/max*100));}
+function badge(st){if(!st)return '<span class="badge idle">UNKNOWN</span>';if(st==='up')return '<span class="badge up">UP</span>';if(st==='down')return '<span class="badge down">DOWN</span>';return '<span class="badge idle">'+st.toUpperCase()+'</span>';}
+async function loadAll(){
+  const btn=document.querySelector('.rbtn');btn.innerHTML='&#x21BB; LOADING';btn.disabled=true;
+  try{
+    const d=await fetch(API).then(r=>r.json());
+    s('pub-ip','<span class="rv ac">'+(d.public_ip||'-')+'</span>');
+    s('pub-isp','<span class="rv">'+(d.isp||'-')+'</span>');
+    s('pub-asn','<span class="rv">'+(d.asn||'-')+'</span>');
+    s('pub-loc','<span class="rv">'+([d.pub_city,d.pub_region,d.pub_country].filter(Boolean).join(', ')||'-')+'</span>');
+    s('pub-proxy','<span class="rv '+(d.proxy?'w':'g')+'">'+(d.proxy?'DETECTED':'NONE')+'</span>');
+    const mb=document.getElementById('map-btn');if(mb&&d.pub_lat)mb.href='https://maps.google.com/?q='+d.pub_lat+','+d.pub_lon;
+    s('l-host','<span class="rv ac">'+(d.hostname||'-')+'</span>');
+    s('hdr-hostname',d.hostname||'NETWORK');
+    document.title=(d.hostname||'Network')+' - Network Status';
+    s('ver-line','Unraid '+(d.unraid_version||'?')+' | Linux '+(d.kernel||'?')+' | '+(d.cpu||'?'));
+    s('l-ip','<span class="rv">'+(d.local_ip||'-')+'</span>');
+    s('l-ip6','<span class="rv d">'+(d.local_ip6||'-')+'</span>');
+    s('l-gw','<span class="rv">'+(d.gateway||'-')+'</span>');
+    s('l-dns','<span class="rv">'+(d.dns||'-')+'</span>');
+    s('l-mac','<span class="rv d">'+(d.mac||'-')+'</span>');
+    s('l-ts','<span class="rv '+(d.tailscale_ip?'g':'d')+'">'+(d.tailscale_ip||'NOT ACTIVE')+'</span>');
+    const run=parseInt(d.docker_running)||0,tot=parseInt(d.docker_total)||0;
+    s('d-run','<span class="d-num" style="color:var(--good)">'+run+'</span>');
+    s('d-total','<span class="d-num">'+tot+'</span>');
+    s('d-stopped','<span class="d-num" style="color:var(--dim)">'+(tot-run)+'</span>');
+    s('s-rx',d.stats_eth0&&d.stats_eth0.rx||'-');s('s-tx',d.stats_eth0&&d.stats_eth0.tx||'-');
+    s('s-eth0',badge(d.eth0_state));s('s-eth1',badge(d.eth1_state));
+    s('s-bond','<span class="rv d">'+(d.bond_mode||'-')+'</span>');
+    s('s-mtu','<span class="rv d">'+(d.mtu||'-')+' bytes</span>');
+    if(d.latency&&d.latency.length){s('lat-body',d.latency.map(l=>'<div class="lat-row"><div class="lat-top"><span class="lat-label">'+l.name+' ('+l.host+')</span>'+colorMs(l.ms)+'</div><div class="bar-track"><div class="bar-fill" style="width:'+barW(l.ms)+'%"></div></div></div>').join(''));}
+    if(d.ports&&d.ports.length){s('ports-grid',d.ports.map(p=>'<div class="port-card"><span class="port-num">'+p.port+'</span><span class="port-svc">'+p.label+'</span><span class="port-state '+(p.open?'open':'closed')+'">'+(p.open?'OPEN':'CLOSED')+'</span></div>').join(''));}
+    s('iface-body','<table class="iface-table"><thead><tr><th>INTERFACE</th><th>IP ADDRESS</th><th>MAC</th><th>STATE</th><th>TYPE</th></tr></thead><tbody><tr><td>eth0</td><td>'+(d.local_ip||'-')+'</td><td style="color:var(--dim)">'+(d.mac||'-')+'</td><td>'+badge(d.eth0_state)+'</td><td style="color:var(--dim2)">Physical</td></tr><tr><td>eth1</td><td>-</td><td style="color:var(--dim)">-</td><td>'+badge(d.eth1_state)+'</td><td style="color:var(--dim2)">Physical</td></tr><tr><td>br0</td><td style="color:var(--glow)">'+(d.local_ip||'-')+'</td><td style="color:var(--dim)">'+(d.mac||'-')+'</td><td><span class="badge up">UP</span></td><td style="color:var(--dim2)">Bridge</td></tr><tr><td>tailscale1</td><td style="color:'+(d.tailscale_ip?'var(--good)':'var(--dim)')+'">'+(d.tailscale_ip||'-')+'</td><td>-</td><td>'+(d.tailscale_ip?'<span class="badge up">UP</span>':'<span class="badge idle">-</span>')+'</td><td style="color:var(--dim2)">VPN</td></tr></tbody></table>');
+    s('ts','Last updated: '+d.timestamp);
+  }catch(e){s('ts','ERROR: '+e.message);}
+  btn.innerHTML='&#x21BB; REFRESH';btn.disabled=false;
+}
+loadAll();setInterval(loadAll,5*60*1000);
+</script>
+</body>
+</html>
