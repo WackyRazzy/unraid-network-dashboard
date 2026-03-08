@@ -1,0 +1,108 @@
+Menu="Dashboard:0"
+Cond="version_compare(parse_ini_file('/etc/unraid-version')['version'],'6.11.9','>')"
+---
+<?PHP
+$pluginname = "network-dashboard";
+
+$local_ip = trim(shell_exec("ip -4 addr show br0 | grep -oP '(?<=inet )[\\d.]+' | head -1"));
+if (!$local_ip) $local_ip = trim(shell_exec("hostname -I | awk '{print $1}'"));
+$api_url = "http://{$local_ip}:8888";
+
+$mytiles[$pluginname]['column1'] = <<<EOT
+<tbody id="net-dash-tile" title="Network Status">
+<tr><td>
+  <span class="tile-header">
+    <span class="tile-header-left">
+      <i class="fa fa-globe fa-fw" style="font-size:2rem;margin-right:8px;color:var(--orange-800,#e5761e);vertical-align:middle;"></i>
+      <div class="section" style="display:inline-block;vertical-align:middle;">
+        Network Status
+        <br><span id="net-pub-ip" style="font-size:1.1em;font-weight:bold;">Loading...</span>
+      </div>
+    </span>
+    <span class="tile-header-right">
+      <span class="tile-header-right-controls">
+        <a href="{$api_url}" target="_blank" title="Open full Network Dashboard">
+          <i class="fa fa-fw fa-external-link control"></i>
+        </a>
+      </span>
+    </span>
+  </span>
+</td></tr>
+
+<tr class="header"><td><i class="fa fa-fw fa-globe" style="margin-right:5px;opacity:0.6;"></i>Public Internet</td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-building" style="margin-right:3px;opacity:0.5;"></i>ISP</span><span class="w72" id="net-isp">—</span></td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-hashtag" style="margin-right:3px;opacity:0.5;"></i>ASN</span><span class="w72" id="net-asn">—</span></td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-map-marker" style="margin-right:3px;opacity:0.5;"></i>Location</span><span class="w72" id="net-location">—</span></td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-shield" style="margin-right:3px;opacity:0.5;"></i>Proxy/VPN</span><span class="w72" id="net-proxy">—</span></td></tr>
+
+<tr class="header"><td><i class="fa fa-fw fa-server" style="margin-right:5px;opacity:0.6;"></i>Local Server</td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-tag" style="margin-right:3px;opacity:0.5;"></i>Hostname</span><span class="w72" id="net-hostname">—</span></td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-laptop" style="margin-right:3px;opacity:0.5;"></i>Local IP</span><span class="w72" id="net-localip">—</span></td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-exchange" style="margin-right:3px;opacity:0.5;"></i>Gateway</span><span class="w72" id="net-gateway">—</span></td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-search" style="margin-right:3px;opacity:0.5;"></i>DNS</span><span class="w72" id="net-dns">—</span></td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-lock" style="margin-right:3px;opacity:0.5;"></i>Tailscale</span><span class="w72" id="net-tailscale">—</span></td></tr>
+
+<tr class="header"><td><i class="fa fa-fw fa-tachometer" style="margin-right:5px;opacity:0.6;"></i>Latency</td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-bolt" style="margin-right:3px;opacity:0.5;"></i>Cloudflare</span><span class="w72" id="net-lat-cf">—</span></td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-google" style="margin-right:3px;opacity:0.5;"></i>Google</span><span class="w72" id="net-lat-gg">—</span></td></tr>
+<tr><td><span class="w26"><i class="fa fa-fw fa-home" style="margin-right:3px;opacity:0.5;"></i>Gateway</span><span class="w72" id="net-lat-gw">—</span></td></tr>
+
+<tr><td style="padding-top:6px;font-size:0.9em;color:var(--alt-text-color,#888);">
+  <i class="fa fa-fw fa-clock-o" style="margin-right:3px;opacity:0.5;"></i><span id="net-updated">—</span>
+  &nbsp;<a href="#" onclick="netDashRefresh();return false;" style="color:var(--orange-800,#e5761e);"><i class="fa fa-fw fa-refresh"></i> refresh</a>
+</td></tr>
+
+</tbody>
+
+<script>
+(function(){
+  var API = '{$api_url}/api/network';
+
+  function fmtMs(ms) {
+    if (ms === null || ms === undefined) return '<span style="color:#e55"><i class="fa fa-fw fa-times-circle"></i> TIMEOUT</span>';
+    var c = ms < 30 ? '#0c6' : ms < 80 ? '#fa0' : '#e55';
+    var icon = ms < 30 ? 'fa-check-circle' : ms < 80 ? 'fa-exclamation-circle' : 'fa-times-circle';
+    return '<span style="color:'+c+';font-weight:bold;"><i class="fa fa-fw '+icon+'" style="margin-right:2px;"></i>'+ms+' ms</span>';
+  }
+
+  function netDashLoad() {
+    fetch(API).then(function(r){ return r.json(); }).then(function(d) {
+      document.getElementById('net-pub-ip').textContent   = d.public_ip || '—';
+      document.getElementById('net-isp').textContent      = d.isp || '—';
+      document.getElementById('net-asn').textContent      = d.asn || '—';
+      var loc = [d.pub_city, d.pub_region, d.pub_country].filter(Boolean).join(', ');
+      document.getElementById('net-location').textContent = loc || '—';
+      document.getElementById('net-proxy').innerHTML = d.proxy
+        ? '<span style="color:#fa0;font-weight:bold;"><i class="fa fa-fw fa-warning"></i> DETECTED</span>'
+        : '<span style="color:#0c6;"><i class="fa fa-fw fa-check"></i> None</span>';
+      document.getElementById('net-hostname').innerHTML  = d.hostname || '—';
+      document.getElementById('net-localip').textContent = d.local_ip || '—';
+      document.getElementById('net-gateway').textContent = d.gateway || '—';
+      document.getElementById('net-dns').textContent     = d.dns || '—';
+      document.getElementById('net-tailscale').innerHTML = d.tailscale_ip
+        ? '<span style="color:#0c6;"><i class="fa fa-fw fa-check-circle"></i> '+d.tailscale_ip+'</span>'
+        : '<span style="color:#888;"><i class="fa fa-fw fa-minus-circle"></i> Not active</span>';
+      if (d.latency && d.latency.length) {
+        var lmap = {};
+        d.latency.forEach(function(l){ lmap[l.name] = l.ms; });
+        document.getElementById('net-lat-cf').innerHTML = fmtMs(lmap['Cloudflare']);
+        document.getElementById('net-lat-gg').innerHTML = fmtMs(lmap['Google']);
+        document.getElementById('net-lat-gw').innerHTML = fmtMs(lmap['Gateway']);
+      }
+      document.getElementById('net-updated').textContent = d.timestamp;
+    }).catch(function(){
+      document.getElementById('net-pub-ip').textContent = 'API unavailable';
+    });
+  }
+
+  window.netDashRefresh = netDashLoad;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', netDashLoad);
+  } else {
+    netDashLoad();
+  }
+  setInterval(netDashLoad, 5 * 60 * 1000);
+})();
+</script>
+EOT;
+?>
