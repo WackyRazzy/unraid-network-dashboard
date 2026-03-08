@@ -43,6 +43,7 @@ Everything runs automatically. No Docker containers, no npm, no extra packages. 
 ## Installation
 
 ### Option 1: Community Apps Store (Recommended)
+Coming Soon. Please use opition 2 untill this message is removed
 
 1. In your Unraid web UI, click the **Apps** tab
 2. Search for **RazzyNet Network Dashboard**
