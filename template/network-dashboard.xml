@@ -1,19 +1,22 @@
 <?xml version="1.0"?>
 <Container version="2">
-  <!--
-    WackyNAS Network Dashboard - Community Apps Template
-    Submitted to: https://github.com/Squidly271/AppFeed
-  -->
 
-  <n>WackyNAS Network Dashboard</n>
+  <n>RazzyNet Network Dashboard</n>
+
   <Repository>WackyRazzy/unraid-network-dashboard</Repository>
+
   <Registry>https://github.com/WackyRazzy/unraid-network-dashboard</Registry>
+
   <Branch>main</Branch>
+
   <Category>Network: Tools: Status: Other:</Category>
+
   <TemplateURL>https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/template/network-dashboard.xml</TemplateURL>
+
   <Icon>https://raw.githubusercontent.com/WackyRazzy/unraid-network-dashboard/main/assets/icon.png</Icon>
+
   <Overview>
-WackyNAS Network Dashboard is a real-time network monitoring plugin for Unraid that adds a live widget to your Unraid Dashboard and a full-page cyberpunk-style diagnostic panel at http://YOUR-IP:8888.
+RazzyNet Network Dashboard is a real-time network monitoring plugin for Unraid. It adds a live tile to your Unraid Dashboard and a full-page diagnostic panel at http://YOUR-IP:8888.
 
 Features:
 - Dashboard widget showing public IP, ISP, ASN, location, latency and Tailscale status
@@ -27,13 +30,19 @@ Features:
 - Lightweight Python3 API server - no extra packages needed
 - Auto-starts on every Unraid boot via /boot/config/go
   </Overview>
+
   <Description>
 Real-time network monitoring plugin for Unraid. Adds a dashboard widget and a full-page diagnostic panel (port 8888) showing public IP, ISP, latency, port status, network interfaces, Tailscale VPN, and Docker stats. Lightweight Python3 server that auto-starts on boot with zero extra dependencies.
   </Description>
+
   <WebUI>http://[IP]:8888</WebUI>
+
   <Support>https://github.com/WackyRazzy/unraid-network-dashboard/issues</Support>
+
   <Project>https://github.com/WackyRazzy/unraid-network-dashboard</Project>
+
   <MinVer>6.12.0</MinVer>
+
   <Changes>
 ### 2025.03.08 ###
 - Initial public release
@@ -42,4 +51,5 @@ Real-time network monitoring plugin for Unraid. Adds a dashboard widget and a fu
 - Python3 API server on port 8888
 - Auto-start on boot via /boot/config/go
   </Changes>
+
 </Container>
