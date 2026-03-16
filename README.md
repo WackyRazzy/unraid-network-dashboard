@@ -30,9 +30,7 @@ Everything runs automatically. No Docker containers, no npm, no extra packages. 
 | 📍 **Location** | City, region and country of your internet connection |
 | 🛡️ **Proxy / VPN Detection** | Detects if a proxy or VPN is active on your connection |
 | ⚡ **Latency Bars** | Live ping times to Cloudflare (1.1.1.1), Google (8.8.8.8), Quad9 (9.9.9.9) and your gateway |
-| 🔌 **Port Checker** | Checks which ports are open locally: HTTP, HTTPS, SSH, DNS, Plex, and more |
 | 📡 **Network Interfaces** | Full table of eth0, eth1, bond0, br0 and Tailscale with state and IP |
-| 🐳 **Docker Stats** | Running vs stopped container count and network RX/TX totals |
 | 🔐 **Tailscale VPN** | Shows your Tailscale IP if active, or flags it as inactive |
 | 🔄 **Auto-refresh** | Dashboard widget refreshes every 5 minutes automatically |
 | 🚀 **Auto-start on Boot** | Starts with Unraid — no manual steps ever needed after install |
@@ -81,9 +79,7 @@ The plugin installs a small **Python 3 HTTP server** on port 8888. Every time th
 2. Checks your DNS servers and Tailscale VPN status
 3. Fetches your public IP and ISP info from [ipapi.co](https://ipapi.co)
 4. Runs ping tests to Cloudflare, Google, Quad9 and your gateway
-5. Checks which local ports are currently listening
-6. Counts your Docker containers and reads network transfer stats
-7. Returns everything as JSON and serves the dashboard UI
+5. Returns everything as JSON and serves the dashboard UI
 
 The server is added to Unraid's `/boot/config/go` script so it restarts automatically after every reboot.
 
